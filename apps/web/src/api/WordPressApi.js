@@ -1,10 +1,21 @@
 /**
- * WordPress Headless CMS API
+ * WordPress Headless CMS API with WooCommerce
  * Configure this with your WordPress REST API endpoint
  */
 
 const WORDPRESS_API_URL = import.meta.env.REACT_APP_WORDPRESS_URL || "https://your-wordpress-site.com";
-const WP_API_NAMESPACE = "/wp-json/wp/v2";
+const WC_API_NAMESPACE = "/wp-json/wc/v3";
+
+// WooCommerce API credentials
+const WC_CONSUMER_KEY = "ck_2affe2d25b9ddd69f2de25b7e0d1227fb891d3f7";
+const WC_CONSUMER_SECRET = "cs_d3bf6148ad14de1331cb08c29494d15636b4057c";
+
+// Create Basic Auth header
+const getAuthHeader = () => {
+  const credentials = `${WC_CONSUMER_KEY}:${WC_CONSUMER_SECRET}`;
+  const encoded = btoa(credentials);
+  return `Basic ${encoded}`;
+};
 
 /**
  * Fetch products from WordPress (WooCommerce)
@@ -15,12 +26,16 @@ export async function getProducts(params = {}) {
     
     if (params.limit) queryParams.append("per_page", params.limit);
     if (params.offset) queryParams.append("offset", params.offset);
-    if (params.category_id) queryParams.append("product_cat", params.category_id);
+    if (params.category_id) queryParams.append("category", params.category_id);
     if (params.search) queryParams.append("search", params.search);
     
-    const url = `${WORDPRESS_API_URL}${WP_API_NAMESPACE}/products?${queryParams.toString()}`;
+    const url = `${WORDPRESS_API_URL}${WC_API_NAMESPACE}/products?${queryParams.toString()}`;
     
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': getAuthHeader(),
+      }
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
     const products = await response.json();
@@ -40,8 +55,12 @@ export async function getProducts(params = {}) {
  */
 export async function getProduct(id) {
   try {
-    const url = `${WORDPRESS_API_URL}${WP_API_NAMESPACE}/products/${id}`;
-    const response = await fetch(url);
+    const url = `${WORDPRESS_API_URL}${WC_API_NAMESPACE}/products/${id}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': getAuthHeader(),
+      }
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
     const product = await response.json();
@@ -57,8 +76,12 @@ export async function getProduct(id) {
  */
 export async function getCategories() {
   try {
-    const url = `${WORDPRESS_API_URL}${WP_API_NAMESPACE}/products/categories?per_page=100`;
-    const response = await fetch(url);
+    const url = `${WORDPRESS_API_URL}${WC_API_NAMESPACE}/products/categories?per_page=100`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': getAuthHeader(),
+      }
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
     const categories = await response.json();
@@ -81,12 +104,13 @@ export async function getCategories() {
  */
 export async function createOrder(orderData) {
   try {
-    const url = `${WORDPRESS_API_URL}${WP_API_NAMESPACE}/orders`;
+    const url = `${WORDPRESS_API_URL}${WC_API_NAMESPACE}/orders`;
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': getAuthHeader(),
       },
       body: JSON.stringify(orderData),
     });
